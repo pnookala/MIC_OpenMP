@@ -25,6 +25,7 @@ int numThreads, numIterations;
 void MatrixMultiplication();
 void Sleep(int sleepTime);
 
+
 int main(int argc, char *argv[]) {
 
 	if (argc != 3) {
@@ -77,9 +78,10 @@ void MatrixMultiplication()
 	printMatrix(A, 'd');
 	printf("Matrix B:\n");
 	printMatrix(B, 'd');
-
-#pragma offload target(mic:MIC_DEV) in(A:length(rows*cols)) \
-	 in( B:length(rows*cols)) \
+	//__Offload_report(2);
+#pragma offload target(mic:MIC_DEV) in(rows:length(int)) \ in(cols:length(int)) \ in(numIterations:length(int)) \
+	in(A:length(rows*cols)) \
+	 in(B:length(rows*cols)) \
 	out(C:length(rows*cols))
 #pragma omp parallel
 
@@ -118,6 +120,7 @@ void MatrixMultiplication()
 	free(B);
 	free(C);
 
+	//__Offload_report(2);
 	return;
 }
 
