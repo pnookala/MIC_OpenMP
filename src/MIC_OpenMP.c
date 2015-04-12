@@ -79,8 +79,7 @@ void MatrixMultiplication()
 	printf("Matrix B:\n");
 	printMatrix(B, 'd');
 	//__Offload_report(2);
-#pragma offload target(mic:MIC_DEV) in(rows:length(int)) \ in(cols:length(int)) \ in(numIterations:length(int)) \
-	in(A:length(rows*cols)) \
+#pragma offload target(mic:MIC_DEV) in(A:length(rows*cols)) \
 	 in(B:length(rows*cols)) \
 	out(C:length(rows*cols))
 #pragma omp parallel
