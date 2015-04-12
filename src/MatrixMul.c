@@ -59,7 +59,7 @@ matrix2d* loadMatrixFile(char* file) {
 	final = malloc(sizeof(matrix2d));
 
 	if (fp == NULL) {
-		fprintf(stderr, "Can't open input file %s\n", file);
+		//fprintf(stderr, "Can't open input file %s\n", file);
 		exit(1);
 	}
 

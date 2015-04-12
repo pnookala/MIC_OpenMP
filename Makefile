@@ -1,5 +1,6 @@
 ### Basic Makefile for OpenMP
 
+//CC = icc -Wall -openmp -fPIC
 CC = gcc -fopenmp
 CFLAGS = -g
 LDFLAGS = 

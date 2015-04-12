@@ -11,7 +11,7 @@
 #define basetype int
 #define basetypeprint "%d"
 
-typedef struct matrix2d {
+/*__attribute__ ((target(mic))) */typedef struct matrix2d {
 	basetype** data;
 	int rows;
 	int cols;
@@ -23,5 +23,12 @@ void randomizeMatrix(matrix2d* mat);
 matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B);
 void printMatrix(matrix2d* mat, char format);
 void deleteMatrix(matrix2d* mat);
+
+/*__attribute__ ((target(mic))) matrix2d* loadMatrixFile(char* file);
+__attribute__ ((target(mic))) matrix2d* createMatrix(int rows, int cols);
+__attribute__ ((target(mic))) void randomizeMatrix(matrix2d* mat);
+__attribute__ ((target(mic))) matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B);
+__attribute__ ((target(mic))) void printMatrix(matrix2d* mat, char format);
+__attribute__ ((target(mic))) void deleteMatrix(matrix2d* mat);*/
 
 #endif /* MATRIXMUL_H_ */

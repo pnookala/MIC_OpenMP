@@ -8,6 +8,8 @@
  ============================================================================
  */
 
+#pragma offload_attribute (push, target (mic))
+
 #ifndef MIC_DEV
 #define MIC_DEV 0
 
@@ -16,14 +18,20 @@
 #include <math.h>
 #include "MatrixMul.h"
 #include "omp.h"
+#include <sys/time.h>
 
 #define basetype int
 #define basetypeprint "%d"
 
-int numThreads, numIterations;
+//__attribute__ ((target(mic)))  int numThreads, numIterations;
 
-void MatrixMultiplication();
-void Sleep(int sleepTime);
+//__attribute__ ((target(mic))) void MatrixMultiplication();
+//__attribute__ ((target(mic))) void Sleep(int sleepTime);
+
+ int numThreads, numIterations;
+
+ void MatrixMultiplication();
+ void Sleep(int sleepTime);
 
 
 int main(int argc, char *argv[]) {
@@ -50,6 +58,9 @@ int main(int argc, char *argv[]) {
 		MatrixMultiplication();
 		break;
 	}
+
+#pragma offload_attribute (pop)
+
 }
 
 void MatrixMultiplication()
@@ -79,9 +90,10 @@ void MatrixMultiplication()
 	printf("Matrix B:\n");
 	printMatrix(B, 'd');
 	//__Offload_report(2);
-#pragma offload target(mic:MIC_DEV) in(A:length(rows*cols)) \
-	 in(B:length(rows*cols)) \
-	out(C:length(rows*cols))
+
+#pragma offload target(mic:MIC_DEV) in(A:length(A->rows*A->cols)) \
+	 in(B:length(B->rows*B->cols)) \
+	out(C:length(A->rows*B->cols))
 #pragma omp parallel
 
 	nt = omp_get_num_threads();
