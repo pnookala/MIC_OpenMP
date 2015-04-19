@@ -8,7 +8,7 @@
  ============================================================================
  */
 
-#pragma offload_attribute (push, target (mic))
+//#pragma offload_attribute (push, target (mic))
 
 #ifndef MIC_DEV
 #define MIC_DEV 0
@@ -24,15 +24,15 @@
 #define basetype int
 #define basetypeprint "%d"
 
-//__attribute__ ((target(mic)))  int numThreads, numIterations;
+__attribute__ ((target(mic)))  int numThreads = 1, numIterations = 1;
 
-//__attribute__ ((target(mic))) void MatrixMultiplication();
-//__attribute__ ((target(mic))) void Sleep(int sleepTime);
+__attribute__ ((target(mic))) void MatrixMultiplication(int sqrtElements);
+__attribute__ ((target(mic))) void Sleep(int sleepTime);
 
- int numThreads=1, numIterations=1;
+// int numThreads=1, numIterations=1;
 
- void MatrixMultiplication(int sqrtElements);
- void Sleep(int sleepTime);
+// void MatrixMultiplication(int sqrtElements);
+// void Sleep(int sleepTime);
 
 
 int main(int argc, char *argv[]) {
@@ -40,10 +40,10 @@ int main(int argc, char *argv[]) {
 		fprintf(stderr, "Expected 3 arguments, <numThreads> <numIterations> <jobType>\nUsing default arguments\n");
 		/*fprintf(stderr, "Enter number of threads and iterations.\n");
 		 return -1;*/
-		argv[0] = "1";
 		argv[1] = "1";
 		argv[2] = "1";
-		argv[3] = "5";
+		argv[3] = "1";
+		argv[4] = "5";
 	}
 	
 	numThreads = atoi(argv[1]);
@@ -72,7 +72,7 @@ int main(int argc, char *argv[]) {
 		break;
 	}
 
-#pragma offload_attribute (pop)
+//#pragma offload_attribute (pop)
 
 }
 
@@ -104,8 +104,9 @@ int main(int argc, char *argv[]) {
 	printf("\tMatrixMult, Initializing MIC\n");
 	int nt;
 	nt = omp_get_num_threads();
+double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 	
-#pragma offload target(mic:MIC_DEV) \
+//#pragma offload target(mic:MIC_DEV) \
 	 in(A:length(A->rows*A->cols)) \
 	 in(B:length(B->rows*B->cols)) \
 	out(C:length(A->rows*B->cols))
@@ -115,7 +116,7 @@ int main(int argc, char *argv[]) {
 		printf("\tMatrixMult, Test run\n");
 		C = multiplyMatrices(A, B);
 		
-		double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
+//		double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 		struct timeval tvBegin, tvEnd, tvDiff;
 		/*Run matrix multiplication numIterations times and calculate the average running time. */
 		
@@ -170,6 +171,8 @@ int main(int argc, char *argv[]) {
 void Sleep(int sleepTime)
 {
 	printf("Starting Sleep Jobs\n");
+	printf("Sleep Time: ", sleepTime);
+	omp_set_num_threads(numThreads);
 
 	int i;
 
@@ -178,14 +181,14 @@ void Sleep(int sleepTime)
 	for (i = 0; i < numIterations; i++) {
 		int dummy = 1;
 		int threadId = omp_get_thread_num();
-		printf("%d", threadId);
+		printf("%d \n", threadId);
 
 		struct timeval tvBegin, tvEnd, tvDiff;
 
 		// begin
 		gettimeofday(&tvBegin, NULL);
 
-//		printf(tvBegin.tv_sec);
+		printf("Start Time: ", tvBegin.tv_sec);
 
 		gettimeofday(&tvEnd, NULL);
 		if (sleepTime) {
@@ -200,7 +203,7 @@ void Sleep(int sleepTime)
 			}
 		}
 
-	//	printf(tvEnd.tv_sec);
+		printf("End Time: ", tvEnd.tv_sec);
 	}
 }
 

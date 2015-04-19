@@ -1,7 +1,6 @@
 ### Basic Makefile for OpenMP
 
-//CC = icc -Wall -openmp -fPIC
-CC = gcc -fopenmp
+CC = icc -Wall -openmp -fPIC -wd2568
 CFLAGS = -g
 LDFLAGS = 
 

@@ -20,9 +20,10 @@ matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B) {
 		int cols = B->cols;
 		C->data = malloc(sizeof(basetype*) * rows);
 
-	//#pragma offload target(mic:MIC_DEV) in(A:length(rows*cols)) \
-	 in( B:length(rows*cols)) \
+	#pragma offload target(mic:MIC_DEV) in(A:length(rows*A->cols)) \
+	 in( B:length(B->rows*cols)) \
 	out(C:length(rows*cols))
+#pragma omp parallel
 		{
 
 			// Initialize matrix rows
