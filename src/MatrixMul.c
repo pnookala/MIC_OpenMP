@@ -26,7 +26,7 @@ matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B) {
 		//C->data = malloc(sizeof(basetype*) * rows);
 		posix_memalign((void**)&(C->data), 64, sizeof(basetype*) * rows);
 
-//	#pragma offload target(mic:MIC_DEV) in(A,B) out(C)
+#pragma offload target(mic:MIC_DEV) in(A,B) out(C)
 #pragma omp parallel
 		{
 
