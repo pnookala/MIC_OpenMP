@@ -81,7 +81,7 @@ int main(int argc, char *argv[]) {
 	printf("Starting matrix multiplication\n");
 	omp_set_num_threads(numThreads);
 
-	int dimA = 500, dimB = 200;
+	int dimA = 512, dimB = 216; //Size should be a multiple of 8 to avoid segmentation fault error on Xeon Phi
 	if(sqrtElements>0){
 		dimA = dimB = sqrtElements;
 	}
@@ -106,10 +106,10 @@ int main(int argc, char *argv[]) {
 	nt = omp_get_num_threads();
 double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 	
-//#pragma offload target(mic:MIC_DEV) \
-	 in(A:length(A->rows*A->cols)) \
-	 in(B:length(B->rows*B->cols)) \
-	out(C:length(A->rows*B->cols))
+#pragma offload target(mic:MIC_DEV) \
+	 in(A:length(sizeof(matrix2d*))) \
+	 in(B:length(sizeof(matrix2d*))) \
+	out(C:length(sizeof(matrix2d*)))
 #pragma omp parallel
 	{
 		/* warm up to overcome setup overhead */
@@ -171,24 +171,24 @@ double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 void Sleep(int sleepTime)
 {
 	printf("Starting Sleep Jobs\n");
-	printf("Sleep Time: ", sleepTime);
+	//printf("Sleep Time: ", sleepTime);
 	omp_set_num_threads(numThreads);
 
 	int i;
 
 #pragma offload target(mic:MIC_DEV)
-#pragma omp parallel
+#pragma omp parallel for
 	for (i = 0; i < numIterations; i++) {
 		int dummy = 1;
 		int threadId = omp_get_thread_num();
-		printf("%d \n", threadId);
+	//	printf("ThreadID: %d \n", threadId);
 
 		struct timeval tvBegin, tvEnd, tvDiff;
 
 		// begin
 		gettimeofday(&tvBegin, NULL);
 
-		printf("Start Time: ", tvBegin.tv_sec);
+		//printf("Start Time: ", tvBegin.tv_sec);
 
 		gettimeofday(&tvEnd, NULL);
 		if (sleepTime) {
@@ -199,11 +199,11 @@ void Sleep(int sleepTime)
 				}
 
 				gettimeofday(&tvEnd, NULL);
-
+				printf("Time Elapsed: %ld seconds, ThreadID: %d \n", (tvEnd.tv_sec - tvBegin.tv_sec), threadId); 
 			}
 		}
 
-		printf("End Time: ", tvEnd.tv_sec);
+		//printf("End Time: ", tvEnd.tv_sec);
 	}
 }
 

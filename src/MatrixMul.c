@@ -14,26 +14,33 @@ matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B) {
 		 }*/
 
 		matrix2d* C;
-		C = malloc(sizeof(matrix2d));
+		//C = malloc(sizeof(matrix2d));
+		posix_memalign((void**)&C, 64, sizeof(matrix2d));
 
 		int rows = A->rows;
+		int m = A->cols;
 		int cols = B->cols;
-		C->data = malloc(sizeof(basetype*) * rows);
+	//	int colsPadded = ( cols%8 == 0 ? cols : cols + (8-cols%8) );
+	//	int rowsPadded = ( rows%8 == 0 ? rows : rows + (8-rows%8) );
 
-	#pragma offload target(mic:MIC_DEV) in(A:length(rows*A->cols)) \
-	 in( B:length(B->rows*cols)) \
-	out(C:length(rows*cols))
+		//C->data = malloc(sizeof(basetype*) * rows);
+		posix_memalign((void**)&(C->data), 64, sizeof(basetype*) * rows);
+
+//	#pragma offload target(mic:MIC_DEV) in(A,B) out(C)
 #pragma omp parallel
 		{
 
 			// Initialize matrix rows
 			C->rows = rows;
 			C->cols = cols;
+//#pragma vector aligned 
+//#pragma ivdep 
 
 			int r = 0;
 			for (; r < rows; r++) {
 				// Initialize matrix columns
-				C->data[r] = malloc(sizeof(basetype) * cols);
+				//C->data[r] = malloc(sizeof(basetype) * cols);
+				posix_memalign((void**)&(C->data[r]), 64, sizeof(basetype) * cols);
 				int c = 0;
 				for (; c < cols; c++) {
 					basetype item = 0;
@@ -57,7 +64,8 @@ matrix2d* loadMatrixFile(char* file) {
 
 	// Initialize matrix
 	matrix2d* final;
-	final = malloc(sizeof(matrix2d));
+//	final = malloc(sizeof(matrix2d));
+	posix_memalign((void**)&final, 64, sizeof(matrix2d));
 
 	if (fp == NULL) {
 		//fprintf(stderr, "Can't open input file %s\n", file);
@@ -71,7 +79,8 @@ matrix2d* loadMatrixFile(char* file) {
 		// Initialize matrix rows
 		final->rows = rows;
 		final->cols = cols;
-		final->data = malloc(sizeof(basetype*) * rows);
+	//	final->data = malloc(sizeof(basetype*) * rows);
+		posix_memalign((void**)&(final->data), 64, sizeof(basetype*) * rows); 
 
 		int r = 0;
 		int c = 0;
@@ -84,7 +93,8 @@ matrix2d* loadMatrixFile(char* file) {
 			//printf("[%d][]", r);
 
 			// Initialize matrix columns
-			final->data[r] = malloc(sizeof(basetype) * cols);
+			//final->data[r] = malloc(sizeof(basetype) * cols);
+			posix_memalign((void**)&(final->data[r]), 64, sizeof(basetype) * cols);
 			for (; c < cols; c++) {
 				basetype item = 0;
 				if (fscanf(fp, basetypeprint, &item) == EOF) {
@@ -107,17 +117,20 @@ matrix2d* loadMatrixFile(char* file) {
 }
 
 matrix2d* createMatrix(int rows, int cols) {
-	matrix2d* final = malloc(sizeof(matrix2d));
+	//matrix2d* final = malloc(sizeof(matrix2d));
+	matrix2d* final;
+	posix_memalign((void**)&final, 64, sizeof(matrix2d));
 	final->rows = rows;
 	final->cols = cols;
-	final->data = malloc(sizeof(basetype*) * rows);
-
+	//final->data = malloc(sizeof(basetype*) * rows);
+	posix_memalign((void**)&(final->data), 64, sizeof(basetype*) * rows);
 	int r = 0;
 
 #pragma omp parallel
 
 	for (; r < rows; r++) {
-		final->data[r] = malloc(sizeof(basetype) * cols);
+		//final->data[r] = malloc(sizeof(basetype) * cols);
+		posix_memalign((void**)&(final->data[r]), 64, sizeof(basetype) * cols);
 		// done initializing here, this is just to clear everything to 0
 		int c = 0;
 		for (; c < cols; c++) {
