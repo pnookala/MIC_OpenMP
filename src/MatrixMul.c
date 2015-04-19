@@ -151,23 +151,27 @@ void printMatrix_simple(matrix2d* mat) {
 
 	for (; c < mat->cols; c++) {
 		printf("\t[%d]", c);
+		if(c >= maxCols){
+			break;
+		}
 	}
 	printf("\n");
 
 	for (; r < mat->rows; r++) {
-		if (r >= maxRows) {
-			printf("...\n");
-			break;
-		}
-
-		c = 0;
 		printf("[%d]", r);
-		for (; c < mat->cols; c++) {
+		for (c = 0; c < mat->cols; c++) {
 			if (c >= maxCols) {
-				printf("\t...");
+				if(r >= maxRows) {
+					printf("\t...");
+				} else {
+					printf("\t...");
+				}
 				break;
+			} else if(r >= maxRows) {
+				printf("\t...");
+			} else {
+				printf("\t%d", mat->data[r][c]);
 			}
-			printf("\t%d", mat->data[r][c]);
 		}
 
 		if (r == 0) {
@@ -175,8 +179,11 @@ void printMatrix_simple(matrix2d* mat) {
 		} else if (r == 1) {
 			printf("\t(%d elements)", mat->rows * mat->cols);
 		}
-
 		printf("\n");
+		
+		if (r >= maxRows) {
+			break;
+		}
 	}
 	printf("\n");
 }

@@ -19,6 +19,7 @@
 #include "MatrixMul.h"
 #include "omp.h"
 #include <sys/time.h>
+#include "float.h"
 
 #define basetype int
 #define basetypeprint "%d"
@@ -28,15 +29,15 @@
 //__attribute__ ((target(mic))) void MatrixMultiplication();
 //__attribute__ ((target(mic))) void Sleep(int sleepTime);
 
- int numThreads, numIterations;
+ int numThreads=1, numIterations=1;
 
- void MatrixMultiplication();
+ void MatrixMultiplication(int sqrtElements);
  void Sleep(int sleepTime);
 
 
 int main(int argc, char *argv[]) {
-
-	if (argc != 3) {
+	if (argc < 4) {
+		fprintf(stderr, "Expected 3 arguments, <numThreads> <numIterations> <jobType>\nUsing default arguments\n");
 		/*fprintf(stderr, "Enter number of threads and iterations.\n");
 		 return -1;*/
 		argv[0] = "1";
@@ -44,18 +45,30 @@ int main(int argc, char *argv[]) {
 		argv[2] = "1";
 		argv[3] = "5";
 	}
+	
+	numThreads = atoi(argv[1]);
+	numIterations = atoi(argv[2]);
+	int jobType = atoi(argv[3]);
+	int duration = 0;
+	if(argc >= 5){
+		duration = atoi(argv[4]);
+	}
 
-	numThreads = atoi(argv[0]);
-	numIterations = atoi(argv[1]);
-	int jobType = atoi(argv[2]);
-	int duration = atoi(argv[3]);
-
+	printf("Using following arguments\n");
+	printf("\tnumThreads:    %i\n", numThreads);
+	printf("\tnumIterations: %i\n", numIterations);
+	printf("\tjobType:       %i\n", jobType);
+	if(argc >= 5){
+		printf("\tduration:      %i\n", duration);
+	}
+	printf("\n");
+	
 	switch (jobType) {
 	case 1:
 		Sleep(duration);
 		break;
 	case 2:
-		MatrixMultiplication();
+		MatrixMultiplication(duration); // Not really duration, it's the number of rows and columns in the test matrix (ex, MatrixMult(5) does a 5x5 matrix.
 		break;
 	}
 
@@ -63,27 +76,24 @@ int main(int argc, char *argv[]) {
 
 }
 
-void MatrixMultiplication()
+ void MatrixMultiplication(int sqrtElements)
 {
-
+	printf("Starting matrix multiplication\n");
 	omp_set_num_threads(numThreads);
 
-	int i, nt = 0;
-
-	printf("Starting matrix multiplication\n");
-	char* fileA = "matA";
-	char* fileB = "matB";
-
-	if (fileA == "") {
-		printf("No file specified\n");
-		return;
-	} else {
-		printf("Using file: '%s'\n", fileA);
+	int dimA = 500, dimB = 200;
+	if(sqrtElements>0){
+		dimA = dimB = sqrtElements;
 	}
 
+	printf("\tMatrixMult, Creating matrices with dimmension %dx%d\n", dimA, dimB);
 	matrix2d *A, *B, *C;
-	A = loadMatrixFile(fileA);
-	B = loadMatrixFile(fileB);
+	A = createMatrix(dimA, dimB);
+	B = createMatrix(dimB, dimA);
+	
+	printf("\tMatrixMult, Randomizing source matrices\n");
+	randomizeMatrix(A);
+	randomizeMatrix(B);
 
 	printf("Matrix A:\n");
 	printMatrix(A, 'd');
@@ -91,45 +101,67 @@ void MatrixMultiplication()
 	printMatrix(B, 'd');
 	//__Offload_report(2);
 
-#pragma offload target(mic:MIC_DEV) in(A:length(A->rows*A->cols)) \
+	printf("\tMatrixMult, Initializing MIC\n");
+	int nt;
+	nt = omp_get_num_threads();
+	
+#pragma offload target(mic:MIC_DEV) \
+	 in(A:length(A->rows*A->cols)) \
 	 in(B:length(B->rows*B->cols)) \
 	out(C:length(A->rows*B->cols))
 #pragma omp parallel
-
-	nt = omp_get_num_threads();
-
-	/* warm up to overcome setup overhead */
-	C = multiplyMatrices(A, B);
-	double aveTime, minTime = 1e6, maxTime = 0.;
-	struct timeval tvBegin, tvEnd, tvDiff;
-	/*Run matrix multiplication numIterations times and calculate the average running time. */
-	for (i = 0; i < numIterations; i++) {
-		gettimeofday(&tvBegin, NULL);
+	{
+		/* warm up to overcome setup overhead */
+		printf("\tMatrixMult, Test run\n");
 		C = multiplyMatrices(A, B);
-
-		printf("Product (C):\n");
-		printMatrix(C, 'd');
-
-		gettimeofday(&tvEnd, NULL);
-		tvDiff.tv_sec = tvEnd.tv_sec - tvBegin.tv_sec;
-
-		maxTime = (maxTime > tvDiff.tv_sec) ? maxTime : tvDiff.tv_sec;
-		minTime = (minTime < tvDiff.tv_sec) ? minTime : tvDiff.tv_sec;
-		aveTime += tvDiff.tv_sec;
+		
+		double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
+		struct timeval tvBegin, tvEnd, tvDiff;
+		/*Run matrix multiplication numIterations times and calculate the average running time. */
+		
+		int i;
+		for (i = 0; i < numIterations; i++) {
+			printf("\tMatrixMult, Starting iter: %d\n", i);
+			gettimeofday(&tvBegin, NULL);
+			C = multiplyMatrices(A, B);
+			gettimeofday(&tvEnd, NULL);
+			
+			double start =  tvBegin.tv_sec + ((double)tvBegin.tv_usec/1e6);
+			double end = tvEnd.tv_sec + ((double)tvEnd.tv_usec/1e6);
+			double diff = end - start;
+			
+			maxTime = (maxTime > diff) ? maxTime : diff;
+			minTime = (minTime < diff) ? minTime : diff;
+			totalTime += diff;
+		}
 	}
-	aveTime /= numIterations;
+	printf("\tMatrixMult, Completed\n");
+	printf("Product (C):\n");
+	printMatrix(C, 'd');
+		
+	double aveTime = totalTime / numIterations;
+	long ops = C->rows * C->cols * C->rows;
+	double gflops = (double)ops * (double)numIterations / ((double)(1e9) * aveTime);
+	
+	printf( "MatrixMult, Summary, ");
+	printf( "%d threads,", numThreads);
+	printf( "%d iterations,", numIterations);
+	printf( "%dx%d matrix,", C->rows, C->cols);
+	printf( "%g maxRT,", maxTime);
+	printf( "%g minRT,",minTime);
+	printf( "%g aveRT,", aveTime);
+	printf( "%g totalRT,", totalTime);
+	printf( "%d operations per iteration,", ops);
+	printf( "%g GFlop/s\n",gflops);
 
-	printf(
-			"%d numThreads %d*%d matrix %d maxRT %g minRT %g aveRT %g GFlop/s %g\n",
-			numThreads, nt, C->rows, C->cols, maxTime, minTime, aveTime,2e-9 * C->rows * C->cols * C->rows / aveTime);
-
+	
 	deleteMatrix(A);
 	deleteMatrix(B);
 	deleteMatrix(C);
 
-	free(A);
-	free(B);
-	free(C);
+	//free(A);
+	//free(B);
+	//free(C);
 
 	//__Offload_report(2);
 	return;
