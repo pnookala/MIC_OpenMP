@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
 	nt = omp_get_num_threads();
 double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 	
-#pragma offload target(mic:MIC_DEV) \
+//#pragma offload target(mic:MIC_DEV) \
 	 in(A:length(sizeof(matrix2d*))) \
 	 in(B:length(sizeof(matrix2d*))) \
 	out(C:length(sizeof(matrix2d*)))
