@@ -23,12 +23,12 @@
 
 #define basetype int
 #define basetypeprint "%d"
-
+/* This section is for offload mode */
 __attribute__ ((target(mic)))  int numThreads = 1, numIterations = 1;
 
 __attribute__ ((target(mic))) void MatrixMultiplication(int sqrtElements);
 __attribute__ ((target(mic))) void Sleep(int sleepTime);
-
+/* This section is for native mode */ 
 // int numThreads=1, numIterations=1;
 
 // void MatrixMultiplication(int sqrtElements);
