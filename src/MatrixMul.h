@@ -22,7 +22,14 @@ __attribute__ ((target(mic))) typedef struct matrix2d {
 	int cols;
 } matrix2d;
 
-/*matrix2d* loadMatrixFile(char* file);
+/*typedef struct matrix2d {
+        basetype** data;
+        int rows;
+        int cols;
+} matrix2d;
+*/
+/*
+matrix2d* loadMatrixFile(char* file);
 matrix2d* createMatrix(int rows, int cols);
 void randomizeMatrix(matrix2d* mat);
 matrix2d* multiplyMatrices(matrix2d* A, matrix2d* B);
@@ -37,3 +44,4 @@ __attribute__ ((target(mic))) void printMatrix(matrix2d* mat, char format);
 __attribute__ ((target(mic))) void deleteMatrix(matrix2d* mat);
 __attribute__ ((target(mic))) void printMatrix_compact(matrix2d* mat);
 __attribute__ ((target(mic))) void printMatrix_simple(matrix2d* mat);
+

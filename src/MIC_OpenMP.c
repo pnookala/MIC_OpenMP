@@ -43,13 +43,13 @@ int main(int argc, char *argv[]) {
 		argv[1] = "1";
 		argv[2] = "1";
 		argv[3] = "1";
-		argv[4] = "5";
+		argv[4] = "500";
 	}
 	
 	numThreads = atoi(argv[1]);
 	numIterations = atoi(argv[2]);
 	int jobType = atoi(argv[3]);
-	int duration = 0;
+	int duration = 500;
 	if(argc >= 5){
 		duration = atoi(argv[4]);
 	}
@@ -65,6 +65,7 @@ int main(int argc, char *argv[]) {
 	
 	switch (jobType) {
 	case 1:
+		//duration is in microseconds
 		Sleep(duration);
 		break;
 	case 2:
@@ -106,7 +107,7 @@ int main(int argc, char *argv[]) {
 	nt = omp_get_num_threads();
 double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 	
-#pragma offload target(mic:MIC_DEV) \
+//#pragma offload target(mic:MIC_DEV) \
 	 in(A:length(sizeof(matrix2d*))) \
 	 in(B:length(sizeof(matrix2d*))) \
 	out(C:length(sizeof(matrix2d*)))
@@ -170,40 +171,46 @@ double totalTime=0, minTime = DBL_MAX, maxTime = 0.;
 
 void Sleep(int sleepTime)
 {
-	printf("Starting Sleep Jobs\n");
-	//printf("Sleep Time: ", sleepTime);
 	omp_set_num_threads(numThreads);
 
-	int i;
+	printf("Starting Sleep Jobs\n");
 
+	int i;
+	printf("Offloading to MIC... \n");
 #pragma offload target(mic:MIC_DEV)
 #pragma omp parallel for
-	for (i = 0; i < numIterations; i++) {
-		int dummy = 1;
-		int threadId = omp_get_thread_num();
-	//	printf("ThreadID: %d \n", threadId);
+        for (i = 0; i < numIterations; i++) {
+                int dummy = 1;
+                int threadId = omp_get_thread_num();
+        //      printf("ThreadID: %d \n", threadId);
 
-		struct timeval tvBegin, tvEnd, tvDiff;
+                struct timeval tvBegin, tvEnd, tvDiff;
 
-		// begin
-		gettimeofday(&tvBegin, NULL);
+                // begin
+                gettimeofday(&tvBegin, NULL);
 
-		//printf("Start Time: ", tvBegin.tv_sec);
+                //printf("Start Time: ", tvBegin.tv_usec);
 
-		gettimeofday(&tvEnd, NULL);
-		if (sleepTime) {
-			while ((int) (tvEnd.tv_sec - tvBegin.tv_sec) < sleepTime) {
-				int i, j;
-				for (i = 0; i < 10000000; ++i) {
-					dummy *= 2;
-				}
+                gettimeofday(&tvEnd, NULL);
+                //printf("Start Time: ", tvBegin.tv_usec);
+                if (sleepTime) {
 
-				gettimeofday(&tvEnd, NULL);
-				printf("Time Elapsed: %ld seconds, ThreadID: %d \n", (tvEnd.tv_sec - tvBegin.tv_sec), threadId); 
+                	while( (tvEnd.tv_usec - tvBegin.tv_usec) <  sleepTime) {
+                                int i, j;
+                                for (i = 0; i < 10000; ++i) {
+                                        dummy *= 2;
+                                }
+
+                                gettimeofday(&tvEnd, NULL);
+                                //printf("Time Elapsed: %ld seconds, ThreadID: %d \n",((tvEnd.tv_usec - tvBegin.tv_usec) / 1000000 + (tvEnd.tv_sec - tvBegin.tv_sec)), threadId);
+                             	// printf( "Thread Num : %d, Sleep Duration (usec): %d, Execution Time: %ld, Theoritical Time: %ld\n", threadId, sleepTime, (tvEnd.tv_usec - tvBegin.tv_usec), sleepMicroSeconds);
+				// printf("Time Elapsed: %ld microseconds, ThreadID: %d \n",(tvEnd.tv_usec - tvBegin.tv_usec), threadId);
+			
 			}
-		}
+		printf( "Thread Num : %d, Sleep Duration (usec): %d, Execution Time: %ld, Theoritical Time: %ld\n", threadId, sleepTime, tvEnd.tv_usec-tvBegin.tv_usec, sleepTime);
+                }
 
-		//printf("End Time: ", tvEnd.tv_sec);
+                //printf("End Time: ", tvEnd.tv_sec);
 	}
 }
 
